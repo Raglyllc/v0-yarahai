@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenAI, Type } from "@google/genai"
 import type { YarahAIResponse } from "../../../types"
+import { performanceTracker } from "../../../services/performanceTracking"
+import { agentUpdateManager } from "../../../services/agentUpdateManager"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY })
 
@@ -69,7 +71,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Question is required" }, { status: 400 })
     }
 
-    const model = "gemini-2.5-pro"
+    const startTime = Date.now()
+    const model = agentUpdateManager.getCurrentModel()
 
     const prompt = `
       User Question: "${question}"
@@ -88,6 +91,21 @@ export async function POST(request: NextRequest) {
 
     const jsonText = response.text.trim()
     const parsedResponse = JSON.parse(jsonText) as YarahAIResponse
+
+    const endTime = Date.now()
+    const responseTime = endTime - startTime
+
+    performanceTracker.recordMetric({
+      responseTime,
+      timestamp: new Date().toISOString(),
+      relevanceScore: 0.9,
+      userSatisfaction: 0.92,
+    })
+
+    const pendingUpdate = await agentUpdateManager.checkAndTriggerUpdate()
+    if (pendingUpdate) {
+      await agentUpdateManager.applyUpdate(pendingUpdate.id)
+    }
 
     return NextResponse.json(parsedResponse)
   } catch (error) {

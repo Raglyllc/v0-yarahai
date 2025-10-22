@@ -38,3 +38,27 @@ export interface Conversation {
     messages: Message[];
     createdAt: string;
 }
+
+export interface ModelPerformanceMetrics {
+    responseTime: number;
+    tokenCount?: number;
+    relevanceScore?: number;
+    userSatisfaction?: number;
+    timestamp: string;
+}
+
+export interface AgentUpdate {
+    id: string;
+    triggeredAt: string;
+    reason: string;
+    previousModel: string;
+    newModel: string;
+    performanceMetrics: ModelPerformanceMetrics;
+    status: 'pending' | 'applied' | 'failed';
+}
+
+export interface PerformanceThresholds {
+    responseTime: number;
+    relevanceScore: number;
+    userSatisfaction: number;
+}
