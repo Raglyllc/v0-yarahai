@@ -38,3 +38,8 @@ export interface Conversation {
     messages: Message[];
     createdAt: string;
 }
+
+export interface ChatHistoryItem {
+    role: 'user' | 'model';
+    content: string;
+}

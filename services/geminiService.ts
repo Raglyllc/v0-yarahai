@@ -1,13 +1,13 @@
-import type { YarahAIResponse } from "../types"
+import type { YarahAIResponse, ChatHistoryItem } from "../types"
 
-export async function getAiResponse(question: string, context: string): Promise<YarahAIResponse> {
+export async function getAiResponse(question: string, context: string, history?: ChatHistoryItem[]): Promise<YarahAIResponse> {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ question, context }),
+      body: JSON.stringify({ question, context, history: history || [] }),
     })
 
     if (!response.ok) {

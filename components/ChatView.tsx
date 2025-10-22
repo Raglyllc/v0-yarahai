@@ -6,7 +6,7 @@ import HistorySidebar from './HistorySidebar';
 import { getAiResponse } from '../services/geminiService';
 import * as db from '../services/db';
 import { useAuth } from '../hooks/useAuth';
-import type { Conversation, Message, YarahAIResponse } from '../types';
+import type { Conversation, Message, YarahAIResponse, ChatHistoryItem } from '../types';
 import { TreeOfLifeIcon } from './icons/TreeOfLifeIcon';
 
 type Theme = 'light' | 'dark';
@@ -77,7 +77,21 @@ const ChatView: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const aiResponse: YarahAIResponse = await getAiResponse(question, context);
+      const chatHistory: ChatHistoryItem[] = messages.map(msg => {
+        if (msg.role === 'user') {
+          return {
+            role: 'user' as const,
+            content: msg.question || ''
+          };
+        } else {
+          return {
+            role: 'model' as const,
+            content: JSON.stringify(msg.response)
+          };
+        }
+      });
+
+      const aiResponse: YarahAIResponse = await getAiResponse(question, context, chatHistory);
       
       const modelMessage: Message = {
         id: `msg_${Date.now() + 1}`,
@@ -88,7 +102,6 @@ const ChatView: React.FC = () => {
 
       setMessages(prev => [...prev, modelMessage]);
 
-      // Save conversation only if logged in
       if (user && !isGuest) {
         if (currentConversation) {
             const updatedConversation = { ...currentConversation, messages: [...currentConversation.messages, userMessage, modelMessage] };
@@ -105,12 +118,11 @@ const ChatView: React.FC = () => {
     } catch (err) {
       setError('An error occurred while fetching the response. Please try again.');
       console.error(err);
-      // Remove the user message if AI fails
       setMessages(prev => prev.slice(0, prev.length -1));
     } finally {
       setIsLoading(false);
     }
-  }, [user, isGuest, currentConversation, loadConversations]);
+  }, [user, isGuest, currentConversation, loadConversations, messages]);
 
   return (
      <div className="relative flex h-screen w-full overflow-hidden">

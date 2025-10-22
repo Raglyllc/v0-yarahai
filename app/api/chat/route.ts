@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenAI, Type } from "@google/genai"
-import type { YarahAIResponse } from "../../../types"
+import type { YarahAIResponse, ChatHistoryItem } from "../../../types"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY })
 
@@ -63,7 +63,7 @@ const responseSchema = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, context } = await request.json()
+    const { question, context, history } = await request.json()
 
     if (!question) {
       return NextResponse.json({ error: "Question is required" }, { status: 400 })
@@ -76,9 +76,19 @@ export async function POST(request: NextRequest) {
       ${context ? `Additional Context Provided by User: "${context}"` : ""}
     `
 
+    const historyItems = Array.isArray(history) && history.length > 0
+      ? history.map((item: ChatHistoryItem) => ({
+          role: item.role,
+          parts: [{ text: item.content }]
+        }))
+      : []
+
     const response = await ai.models.generateContent({
       model: model,
-      contents: prompt,
+      contents: [
+        ...historyItems,
+        { role: "user", parts: [{ text: prompt }] }
+      ],
       config: {
         systemInstruction: `You are YARAH AI, an expert theological and historical research assistant specializing in scriptural analysis. Your purpose is to provide users with insightful, accurate, and contextually rich answers based on the Bible and other relevant religious or historical texts. Adhere strictly to the provided JSON schema for your response. Your tone should be scholarly, neutral, and respectful of all religious traditions.`,
         responseMimeType: "application/json",
