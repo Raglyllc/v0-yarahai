@@ -17,6 +17,9 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onSubmit, isLoading }) => {
     e.preventDefault();
     if (question.trim() && !isLoading) {
       onSubmit(question, context);
+      setQuestion('');
+      setContext('');
+      setShowContext(false);
     }
   };
 
